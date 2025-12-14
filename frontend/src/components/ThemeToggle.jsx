@@ -1,4 +1,5 @@
 import { useTheme } from '../context/ThemeContext';
+import { Sun, Moon } from 'lucide-react';
 
 export const ThemeToggle = () => {
   const { isDark, toggleTheme } = useTheme();
@@ -7,11 +8,21 @@ export const ThemeToggle = () => {
     <button
       onClick={toggleTheme}
       className={isDark 
-        ? "p-3 rounded-lg font-medium bg-gray-700 text-yellow-400 hover:bg-gray-600" 
-        : "p-3 rounded-lg font-medium bg-gray-200 text-gray-800 hover:bg-gray-300"
+        ? "px-5 py-2.5 rounded-full font-semibold bg-zinc-800 text-white hover:bg-zinc-700 transition-all flex items-center gap-2 border border-gray-700" 
+        : "px-5 py-2.5 rounded-full font-semibold bg-gray-200 text-gray-800 hover:bg-gray-300 transition-all flex items-center gap-2 border border-gray-300"
       }
     >
-      {isDark ? '☀️ Light Mode' : '🌙 Dark Mode'}
+      {isDark ? (
+        <>
+          <Sun className="w-4 h-4" />
+          Light
+        </>
+      ) : (
+        <>
+          <Moon className="w-4 h-4" />
+          Dark
+        </>
+      )}
     </button>
   );
 };

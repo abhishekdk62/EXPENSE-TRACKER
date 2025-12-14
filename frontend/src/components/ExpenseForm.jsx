@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { expenseSchema, CATEGORIES } from '../schemas/expenseSchema';
 import { ZodError } from 'zod';
-import { Plus, Loader2 } from 'lucide-react';
+import { Plus, Loader2, X } from 'lucide-react';
 
-export const ExpenseForm = ({ onSubmit }) => {
+export const ExpenseForm = ({ onSubmit, initialData = null, onCancel = null }) => {
   const { isDark } = useTheme();
   const [formData, setFormData] = useState({
     title: '',
@@ -15,6 +15,26 @@ export const ExpenseForm = ({ onSubmit }) => {
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        title: initialData.title || '',
+        amount: initialData.amount?.toString() || '',
+        category: initialData.category || 'food',
+        notes: initialData.notes || '',
+        date: initialData.date ? new Date(initialData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+      });
+    } else {
+      setFormData({
+        title: '',
+        amount: '',
+        category: 'food',
+        notes: '',
+        date: new Date().toISOString().split('T')[0]
+      });
+    }
+  }, [initialData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -43,13 +63,6 @@ export const ExpenseForm = ({ onSubmit }) => {
       
       await onSubmit(validatedData);
       
-      setFormData({
-        title: '',
-        amount: '',
-        category: 'food',
-        notes: '',
-        date: new Date().toISOString().split('T')[0]
-      });
       setErrors({});
       
     } catch (err) {
@@ -61,7 +74,7 @@ export const ExpenseForm = ({ onSubmit }) => {
         });
         setErrors(formattedErrors);
       } else {
-        setErrors({ submit: err.message || 'Failed to add expense' });
+        setErrors({ submit: err.message || 'Failed to save expense' });
       }
     } finally {
       setIsSubmitting(false);
@@ -96,7 +109,6 @@ export const ExpenseForm = ({ onSubmit }) => {
         </div>
       )}
       
-      {/* Title Field */}
       <div>
         <input
           type="text"
@@ -113,13 +125,11 @@ export const ExpenseForm = ({ onSubmit }) => {
         )}
       </div>
 
-      {/* Amount & Category */}
       <div className="grid grid-cols-2 gap-4">
         <div>
           <input
             type="number"
             name="amount"
-            min={0}
             placeholder="Amount"
             value={formData.amount}
             onChange={handleChange}
@@ -154,7 +164,6 @@ export const ExpenseForm = ({ onSubmit }) => {
         </div>
       </div>
 
-      {/* Date Field */}
       <div>
         <input
           type="date"
@@ -170,7 +179,6 @@ export const ExpenseForm = ({ onSubmit }) => {
         )}
       </div>
 
-      {/* Notes Field */}
       <div>
         <textarea
           name="notes"
@@ -187,27 +195,42 @@ export const ExpenseForm = ({ onSubmit }) => {
         )}
       </div>
 
-      {/* Submit Button */}
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className={isDark
-          ? "w-full py-3.5 px-6 rounded-xl font-semibold bg-white text-black hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-          : "w-full py-3.5 px-6 rounded-xl font-semibold bg-black text-white hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-        }
-      >
-        {isSubmitting ? (
-          <>
-            <Loader2 className="w-5 h-5 animate-spin" />
-            Adding...
-          </>
-        ) : (
-          <>
-            <Plus className="w-5 h-5" />
-            Add Expense
-          </>
+      <div className="flex gap-3 pt-2">
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className={isDark
+              ? "flex-1 py-3.5 px-6 rounded-xl font-semibold bg-zinc-800 text-white hover:bg-zinc-700 transition-all flex items-center justify-center gap-2"
+              : "flex-1 py-3.5 px-6 rounded-xl font-semibold bg-gray-200 text-gray-800 hover:bg-gray-300 transition-all flex items-center justify-center gap-2"
+            }
+          >
+            <X className="w-5 h-5" />
+            Cancel
+          </button>
         )}
-      </button>
+        
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className={isDark
+            ? "flex-1 py-3.5 px-6 rounded-xl font-semibold bg-white text-black hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+            : "flex-1 py-3.5 px-6 rounded-xl font-semibold bg-black text-white hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+          }
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              {initialData ? 'Updating...' : 'Adding...'}
+            </>
+          ) : (
+            <>
+              <Plus className="w-5 h-5" />
+              {initialData ? 'Update Expense' : 'Add Expense'}
+            </>
+          )}
+        </button>
+      </div>
     </form>
   );
 };

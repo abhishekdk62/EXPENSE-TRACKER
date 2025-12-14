@@ -1,18 +1,20 @@
 import Expense from "../models/Expense.js";
 import { validateExpense } from "../utils/validators.js";
+import { HTTP_STATUS } from "../constants/httpStatus.js";
+import { ERROR_MESSAGES } from "../constants/messages.js";
 
 export const createExpense = async (req, res, next) => {
   try {
     const { error } = validateExpense(req.body);
     if (error) {
-      return res.status(400).json({
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
         message: error.details[0].message,
       });
     }
 
     const expense = await Expense.create(req.body);
-    res.status(201).json({
+    res.status(HTTP_STATUS.CREATED).json({
       success: true,
       data: expense,
     });
@@ -23,8 +25,13 @@ export const createExpense = async (req, res, next) => {
 
 export const getAllExpenses = async (req, res, next) => {
   try {
-    const expenses = await Expense.find().sort({ date: -1 });
-    res.status(200).json({
+    const { category } = req.query;
+    const filter = {};
+    if (category && category !== 'all') {
+      filter.category = category;
+    }
+    const expenses = await Expense.find(filter).sort({ date: -1 });
+    res.status(HTTP_STATUS.OK).json({
       success: true,
       count: expenses.length,
       data: expenses,
@@ -34,26 +41,27 @@ export const getAllExpenses = async (req, res, next) => {
   }
 };
 
+
 export const getExpenseById = async (req, res, next) => {
   try {
     const expense = await Expense.findById(req.params.id);
 
     if (!expense) {
-      return res.status(404).json({
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
         success: false,
-        message: "Expense not found",
+        message: ERROR_MESSAGES.EXPENSE_NOT_FOUND,
       });
     }
 
-    res.status(200).json({
+    res.status(HTTP_STATUS.OK).json({
       success: true,
       data: expense,
     });
   } catch (error) {
     if (error.name === "CastError") {
-      return res.status(400).json({
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
-        message: "Invalid expense ID",
+        message: ERROR_MESSAGES.INVALID_EXPENSE_ID,
       });
     }
     next(error);
@@ -64,7 +72,7 @@ export const updateExpense = async (req, res, next) => {
   try {
     const { error } = validateExpense(req.body);
     if (error) {
-      return res.status(400).json({
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
         message: error.details[0].message,
       });
@@ -76,21 +84,21 @@ export const updateExpense = async (req, res, next) => {
     });
 
     if (!expense) {
-      return res.status(404).json({
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
         success: false,
-        message: "Expense not found",
+        message: ERROR_MESSAGES.EXPENSE_NOT_FOUND,
       });
     }
 
-    res.status(200).json({
+    res.status(HTTP_STATUS.OK).json({
       success: true,
       data: expense,
     });
   } catch (error) {
     if (error.name === "CastError") {
-      return res.status(400).json({
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
-        message: "Invalid expense ID",
+        message: ERROR_MESSAGES.INVALID_EXPENSE_ID,
       });
     }
     next(error);
@@ -102,21 +110,21 @@ export const deleteExpense = async (req, res, next) => {
     const expense = await Expense.findByIdAndDelete(req.params.id);
 
     if (!expense) {
-      return res.status(404).json({
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
         success: false,
-        message: "Expense not found",
+        message: ERROR_MESSAGES.EXPENSE_NOT_FOUND,
       });
     }
 
-    res.status(200).json({
+    res.status(HTTP_STATUS.OK).json({
       success: true,
-      message: "Expense deleted successfully",
+      message: ERROR_MESSAGES.EXPENSE_DELETED,
     });
   } catch (error) {
     if (error.name === "CastError") {
-      return res.status(400).json({
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
-        message: "Invalid expense ID",
+        message: ERROR_MESSAGES.INVALID_EXPENSE_ID,
       });
     }
     next(error);
@@ -148,7 +156,7 @@ export const getExpenseSummary = async (req, res, next) => {
 
     const totalAmount = summary.reduce((acc, curr) => acc + curr.total, 0);
 
-    res.status(200).json({
+    res.status(HTTP_STATUS.OK).json({
       success: true,
       totalAmount,
       data: summary,

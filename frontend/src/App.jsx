@@ -1,22 +1,48 @@
 import { useState } from 'react';
 import { useTheme } from './context/ThemeContext';
-import { ExpenseForm } from './components/ExpenseForm';
+import { ExpenseModal } from './components/ExpenseModal';
 import { ExpenseList } from './components/ExpenseList';
 import { ExpenseSummary } from './components/ExpenseSummary';
 import { FilterBar } from './components/FilterBar';
 import { ThemeToggle } from './components/ThemeToggle';
 import { Loader } from './components/Loader';
 import { useExpenses } from './hooks/useExpenses';
-import { Wallet, PlusCircle, BarChart3, AlertCircle } from 'lucide-react';
+import { Wallet, Plus, BarChart3, AlertCircle } from 'lucide-react';
 
 function App() {
   const { isDark } = useTheme();
-  const { expenses, loading, error, addExpense, deleteExpense } = useExpenses();
+  const { expenses, loading, error, addExpense, updateExpense, deleteExpense ,refetch} = useExpenses();
   const [filter, setFilter] = useState('all');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState(null);
+  const handleFilterChange = (newFilter) => {
+    setFilter(newFilter);
+    refetch(newFilter); 
+  };
 
-  const filteredExpenses = filter === 'all'
-    ? expenses
-    : expenses.filter(exp => exp.category === filter);
+
+  const handleOpenAddModal = () => {
+    setEditingExpense(null);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditModal = (expense) => {
+    setEditingExpense(expense);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingExpense(null);
+  };
+
+  const handleSubmit = async (expenseData) => {
+    if (editingExpense) {
+      await updateExpense(editingExpense._id, expenseData);
+    } else {
+      await addExpense(expenseData);
+    }
+  };
 
   return (
     <div className={isDark ? "min-h-screen bg-black" : "min-h-screen bg-gray-50"}>
@@ -40,70 +66,64 @@ function App() {
               Expense Tracker
             </h1>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleOpenAddModal}
+              className={isDark
+                ? "px-5 py-2.5 rounded-full font-semibold bg-white text-black hover:bg-gray-200 transition-all flex items-center gap-2"
+                : "px-5 py-2.5 rounded-full font-semibold bg-black text-white hover:bg-gray-800 transition-all flex items-center gap-2"
+              }
+            >
+              <Plus className="w-5 h-5" />
+              Add Expense
+            </button>
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-10">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Add Expense Form */}
-          <div className="lg:col-span-1">
-            <div className={isDark 
-              ? "p-8 rounded-2xl border border-gray-800 sticky top-6 bg-zinc-950 shadow-2xl" 
-              : "p-8 rounded-2xl border border-gray-200 sticky top-6 bg-white shadow-lg"
-            }>
+        <div className="space-y-8">
+          {/* Summary Card */}
+          <ExpenseSummary />
+
+          {/* Expenses List Card */}
+          <div className={isDark 
+            ? "p-8 rounded-2xl border border-gray-800 bg-zinc-950 shadow-2xl" 
+            : "p-8 rounded-2xl border border-gray-200 bg-white shadow-lg"
+          }>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
               <h2 className={isDark 
-                ? "text-2xl font-bold mb-6 text-white flex items-center gap-2" 
-                : "text-2xl font-bold mb-6 text-gray-900 flex items-center gap-2"
+                ? "text-2xl font-bold text-white flex items-center gap-2" 
+                : "text-2xl font-bold text-gray-900 flex items-center gap-2"
               }>
-                <PlusCircle className="w-6 h-6" /> Add Expense
+                <BarChart3 className="w-6 h-6" /> Your Expenses
               </h2>
-              <ExpenseForm onSubmit={addExpense} />
+              <FilterBar onFilterChange={handleFilterChange} currentFilter={filter} />
             </div>
-          </div>
 
-          {/* Right Column - Summary & List */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Summary Card */}
-            <ExpenseSummary />
-
-            {/* Expenses List Card */}
-            <div className={isDark 
-              ? "p-8 rounded-2xl border border-gray-800 bg-zinc-950 shadow-2xl" 
-              : "p-8 rounded-2xl border border-gray-200 bg-white shadow-lg"
-            }>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-                <h2 className={isDark 
-                  ? "text-2xl font-bold text-white flex items-center gap-2" 
-                  : "text-2xl font-bold text-gray-900 flex items-center gap-2"
-                }>
-                  <BarChart3 className="w-6 h-6" /> Your Expenses
-                </h2>
-                <FilterBar onFilterChange={setFilter} currentFilter={filter} />
-              </div>
-
-              {loading && <Loader />}
-              
-              {error && (
-                <div className={isDark 
-                  ? "p-5 rounded-xl border border-red-900 bg-red-950 text-red-200" 
-                  : "p-5 rounded-xl border border-red-200 bg-red-50 text-red-700"
-                }>
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="w-5 h-5" />
-                    <span className="font-medium">{error}</span>
-                  </div>
+            {loading && <Loader />}
+            
+            {error && (
+              <div className={isDark 
+                ? "p-5 rounded-xl border border-red-900 bg-red-950 text-red-200" 
+                : "p-5 rounded-xl border border-red-200 bg-red-50 text-red-700"
+              }>
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5" />
+                  <span className="font-medium">{error}</span>
                 </div>
-              )}
+              </div>
+            )}
 
-              {!loading && !error && (
-                <ExpenseList 
-                  expenses={filteredExpenses} 
-                  onDelete={deleteExpense}
-                />
-              )}
-            </div>
+            {!loading && !error && (
+              <ExpenseList 
+                expenses={expenses} 
+                onDelete={deleteExpense}
+                onEdit={handleOpenEditModal}
+              />
+            )}
           </div>
         </div>
       </main>
@@ -119,6 +139,14 @@ function App() {
           </p>
         </div>
       </footer>
+
+      {/* Expense Modal */}
+      <ExpenseModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onSubmit={handleSubmit}
+        initialData={editingExpense}
+      />
     </div>
   );
 }

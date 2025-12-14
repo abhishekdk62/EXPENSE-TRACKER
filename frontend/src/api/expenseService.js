@@ -1,8 +1,12 @@
 import apiClient from './apiClient';
 
 export const expenseService = {
-  getAllExpenses: async () => {
-    const response = await apiClient.get('/expenses');
+  getAllExpenses: async (category='all') => {
+    const url = category === 'all' 
+    ? '/expenses' 
+    : `/expenses?category=${category}`;
+
+    const response = await apiClient.get(url);
     return response.data;
   },
 
